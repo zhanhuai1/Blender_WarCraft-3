@@ -1,4 +1,6 @@
 
+import os
+
 import bpy
 from . import classes
 from . import constants
@@ -69,8 +71,33 @@ class WarCraft3OperatorImportMDX(bpy.types.Operator, io_utils.ImportHelper):
         importProperties.use_custom_fps = self.properties.useCustomFPS
         importProperties.fps = self.properties.animationFPS
         importProperties.calculate_frame_time()
+        oldObjects = set(bpy.context.scene.objects)
         parser.load_mdx(importProperties)
+        newObjects = set(bpy.context.scene.objects) - oldObjects
+        newObjects = set(obj for obj in newObjects if obj.type == 'MESH')
+        self.export_fbx(newObjects)
         return {'FINISHED'}
+
+    def export_fbx(self, objects):
+        if not objects:
+            self.report({'WARNING'}, 'no mesh objects to export')
+            return
+        if not hasattr(bpy.ops.export_scene, 'fbx'):
+            self.report({'WARNING'}, 'io_scene_fbx addon not enabled, skip FBX export')
+            return
+        fbxFilePath = os.path.splitext(self.properties.filepath)[0] + '.fbx'
+        bpy.ops.object.select_all(action='DESELECT')
+        for obj in objects:
+            obj.scale = (0.01, 0.01, 0.01)
+            obj.select = True
+        bpy.ops.export_scene.fbx(
+            filepath=fbxFilePath,
+            use_selection=True,
+            use_anim=False,
+            axis_forward='X',
+            axis_up='Z'
+            )
+        bpy.ops.object.select_all(action='DESELECT')
 
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
