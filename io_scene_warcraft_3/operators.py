@@ -104,6 +104,86 @@ class WarCraft3OperatorImportMDX(bpy.types.Operator, io_utils.ImportHelper):
         return {'RUNNING_MODAL'}
 
 
+class WarCraft3OperatorImportMDXBatch(bpy.types.Operator):
+    bl_idname = 'warcraft_3.import_mdx_batch'
+    bl_label = 'Import *.mdx (batch)'
+    bl_description = 'Import all *.mdx files from a directory and export them as *.fbx'
+    bl_options = {'UNDO'}
+
+    directory = bpy.props.StringProperty(name='Directory', maxlen=1024, subtype='DIR_PATH')
+    useCustomFPS = bpy.props.BoolProperty(name='Use Custom FPS', default=False)
+    animationFPS = bpy.props.FloatProperty(name='Animation FPS', default=30.0, min=1.0, max=1000.0)
+    boneSize = bpy.props.FloatProperty(name='Bone Size', default=5.0, min=0.0001, max=1000.0)
+    teamColor = bpy.props.FloatVectorProperty(
+        name='Team Color',
+        default=constants.TEAM_COLORS['RED'],
+        min=0.0,
+        max=1.0,
+        size=3,
+        subtype='COLOR',
+        precision=3
+        )
+    setTeamColor = bpy.props.EnumProperty(
+        items=[
+            ('RED', 'Red', ''),
+            ('DARK_BLUE', 'Dark Blue', ''),
+            ('TURQUOISE', 'Turquoise', ''),
+            ('VIOLET', 'Violet', ''),
+            ('YELLOW', 'Yellow', ''),
+            ('ORANGE', 'Orange', ''),
+            ('GREEN', 'Green', ''),
+            ('PINK', 'Pink', ''),
+            ('GREY', 'Grey', ''),
+            ('BLUE', 'Blue', ''),
+            ('DARK_GREEN', 'Dark Green', ''),
+            ('BROWN', 'Brown', ''),
+            ('BLACK', 'Black', '')
+            ],
+        name='Set Team Color',
+        update=utils.set_team_color_property,
+        default='RED'
+        )
+
+    def draw(self, context):
+        layout = self.layout
+        split = layout.split(percentage=0.9)
+        subSplit = split.split(percentage=0.5)
+        subSplit.label('Team Color:')
+        subSplit.prop(self.properties, 'setTeamColor', text='')
+        split.prop(self.properties, 'teamColor', text='')
+        layout.prop(self.properties, 'boneSize')
+        layout.prop(self.properties, 'useCustomFPS')
+        if self.properties.useCustomFPS:
+            layout.prop(self.properties, 'animationFPS')
+
+    def execute(self, context):
+        if not self.directory:
+            self.report({'ERROR'}, 'no directory selected')
+            return {'CANCELLED'}
+        mdxFiles = sorted(fileName for fileName in os.listdir(self.directory) if fileName.lower().endswith('.mdx'))
+        wm = context.window_manager
+        wm.progress_begin(0, len(mdxFiles))
+        for index, fileName in enumerate(mdxFiles):
+            filePath = os.path.join(self.directory, fileName)
+            try:
+                bpy.ops.warcraft_3.import_mdx(
+                    filepath=filePath,
+                    setTeamColor=self.setTeamColor,
+                    boneSize=self.boneSize,
+                    useCustomFPS=self.useCustomFPS,
+                    animationFPS=self.animationFPS
+                    )
+            except Exception as e:
+                self.report({'ERROR'}, '{0}: {1}'.format(fileName, e))
+            wm.progress_update(index + 1)
+        wm.progress_end()
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+
 class WarCraft3OperatorAddSequenceToArmature(bpy.types.Operator):
     bl_idname = 'warcraft_3.add_sequence_to_armature'
     bl_label = 'WarCraft 3 Add Sequence to Armature'
