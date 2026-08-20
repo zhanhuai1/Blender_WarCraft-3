@@ -11,11 +11,17 @@ def menu_import_mdx(self, context):
     self.layout.operator(operators.WarCraft3OperatorImportMDXBatch.bl_idname, text='WarCraft 3 (.mdx) (batch)')
 
 
+def menu_object(self, context):
+    self.layout.operator(operators.WarCraft3OperatorLimitMeshSize.bl_idname, text='WarCraft 3 Limit Mesh Size')
+
+
 def register():
     bpy.utils.register_class(preferences.WarCraft3Preferences)
     bpy.utils.register_class(operators.WarCraft3OperatorImportMDX)
     bpy.utils.register_class(operators.WarCraft3OperatorImportMDXBatch)
     bpy.types.INFO_MT_file_import.append(menu_import_mdx)
+    bpy.utils.register_class(operators.WarCraft3OperatorLimitMeshSize)
+    bpy.types.VIEW3D_MT_object.append(menu_object)
     bpy.utils.register_class(operators.WarCraft3OperatorAddSequenceToArmature)
     bpy.utils.register_class(operators.WarCraft3OperatorRemoveSequenceToArmature)
     bpy.utils.register_class(operators.WarCraft3OperatorUpdateBoneSettings)
@@ -30,6 +36,8 @@ def register():
 
 def unregister():
     bpy.types.INFO_MT_file_import.remove(menu_import_mdx)
+    bpy.types.VIEW3D_MT_object.remove(menu_object)
+    bpy.utils.unregister_class(operators.WarCraft3OperatorLimitMeshSize)
     bpy.utils.unregister_class(operators.WarCraft3OperatorImportMDXBatch)
     bpy.utils.unregister_class(operators.WarCraft3OperatorImportMDX)
     bpy.utils.unregister_class(ui.WarCraft3PanelBone)
